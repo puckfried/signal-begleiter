@@ -3,6 +3,7 @@ const API_URL = (lat, lon) =>
 
 export async function getNightConditions({ lat, lon }) {
     const res = await fetch(API_URL(lat, lon));
+    if (!res.ok) throw new Error(`SMHI API Fehler: ${res.status} für lat=${lat}, lon=${lon}`);
     const { timeSeries } = await res.json();
 
     const now = new Date();
@@ -13,6 +14,7 @@ export async function getNightConditions({ lat, lon }) {
         const t = new Date(time);
         return t >= nightStart && t <= nightEnd;
     });
+    if (nightEntries.length === 0) throw new Error('SMHI liefert keine Daten für die kommende Nacht');
 
     return nightEntries.map(({ time, data }) => ({
         hour: new Date(time).getUTCHours(),
@@ -22,6 +24,7 @@ export async function getNightConditions({ lat, lon }) {
 
 export async function getTomorrowForecast({ lat, lon }) {
     const res = await fetch(API_URL(lat, lon));
+    if (!res.ok) throw new Error(`SMHI API Fehler: ${res.status} für lat=${lat}, lon=${lon}`);
     const { timeSeries } = await res.json();
 
     const now = new Date();
@@ -36,6 +39,7 @@ export async function getTomorrowForecast({ lat, lon }) {
             && t.getUTCHours() <= 22;
     });
 
+    if (dayEntries.length === 0) throw new Error('SMHI liefert keine Daten für morgen');
     const temps = dayEntries.map(({ data }) => data.air_temperature);
     const totalRainMm = dayEntries.reduce((sum, { data }) => sum + data.precipitation_amount_mean_deterministic, 0);
 
