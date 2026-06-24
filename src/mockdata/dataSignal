@@ -1,0 +1,52 @@
+// Rückgabe bei Bild payload.params.envelope
+{
+  source: "+4917640058348",
+  sourceNumber: "+4917640058348",
+  sourceUuid: "f519fe9e-8c9e-4c93-89d8-bdad7cefcc96",
+  sourceName: "christoph",
+  sourceDevice: 1,
+  timestamp: 1782147658816,
+  serverReceivedTimestamp: 1782147657263,
+  serverDeliveredTimestamp: 1782147657281,
+  dataMessage: {
+    timestamp: 1782147658816,
+    message: null,
+    expiresInSeconds: 0,
+    isExpirationUpdate: false,
+    viewOnce: false,
+    attachments: [
+      [Object ...]
+    ],
+    groupInfo: {
+      groupId: "v2rmWfVuR/UXD6NDEHMRx1tlAyBu3ifE54Kh+LgY2RU=",
+      groupName: "Roboclub",
+      revision: 0,
+      type: "DELIVER",
+    },
+  },
+}
+
+// Rückgabe bei Text (Hä) payload.params.envelope
+{
+  source: "+4917640058348",
+  sourceNumber: "+4917640058348",
+  sourceUuid: "f519fe9e-8c9e-4c93-89d8-bdad7cefcc96",
+  sourceName: "christoph",
+  sourceDevice: 1,
+  timestamp: 1782147624223,
+  serverReceivedTimestamp: 1782147622653,
+  serverDeliveredTimestamp: 1782147622666,
+  dataMessage: {
+    timestamp: 1782147624223,
+    message: "Hä",
+    expiresInSeconds: 0,
+    isExpirationUpdate: false,
+    viewOnce: false,
+    groupInfo: {
+      groupId: "v2rmWfVuR/UXD6NDEHMRx1tlAyBu3ifE54Kh+LgY2RU=",
+      groupName: "Roboclub",
+      revision: 0,
+      type: "DELIVER",
+    },
+  },
+}

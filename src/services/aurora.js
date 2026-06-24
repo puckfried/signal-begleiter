@@ -1,5 +1,4 @@
-
-// Aurora-Wahrscheinlichkeit erwartet Zahlen-Objekt {lat, lon} 
+// Checkt ob Aurora an dem Ort wahrscheinlich
 
 export async function getAurora( {lat, lon} ){
    
