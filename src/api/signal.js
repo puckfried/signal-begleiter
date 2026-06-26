@@ -2,10 +2,17 @@ export async function sendSignalMessage(text, recipientGroupId) {
     const botNumber = process.env.SIGNAL_BOT_NUMBER;
     const signalApiUrl = process.env.SIGNAL_API_URL;
 
+    // --- NEU: Das Präfix für Gruppen-IDs hinzufügen ---
+    let formattedRecipient = recipientGroupId;
+    // Wenn es keine Telefonnummer (+) ist und auch noch nicht "group." davorsteht:
+    if (!recipientGroupId.startsWith('+') && !recipientGroupId.startsWith('group.')) {
+        formattedRecipient = `group.${recipientGroupId}`;
+    }
+
     const payload = {
         message: text,
         number: botNumber,
-        recipients: [recipientGroupId] // Die API erwartet ein Array
+        recipients: [formattedRecipient] // Die API erwartet ein Array
     };
 
     const response = await fetch(`${signalApiUrl}/v2/send`, {

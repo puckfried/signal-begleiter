@@ -2,9 +2,6 @@ import 'dotenv/config'; // Lädt die .env automatisch aus dem Root!
 import { handleIncomingMessage } from './controller/messageController.js';
 import { logError } from './utils/logger.js';
 import { runNightlyCheck } from './controller/cronController.js';
-// Die Kommandozeilen-Weiche (Der Test-Modus)
-// const args = process.argv.slice(2);
-// const command = args[0];
 
 const PORT = process.env.PORT || 3000;
 
@@ -16,7 +13,6 @@ Bun.serve({
 
         if (req.method === 'POST' && url.pathname === '/webhook'){
             try {
-                // req.json() ersetzt den express.json() body-parser!
                 const payload = await req.json();
                 console.log("Message auis signal: ", payload.params.envelope)
 
@@ -29,7 +25,6 @@ Bun.serve({
                 return new Response("Webhook received", { status: 200 });
 
             } catch (error) {
-                // Falls jemand kaputtes JSON schickt
                 logError("Fehler beim Parsen des Webhooks", error);
                 return new Response("Bad Request", { status: 400 });
             }

@@ -1,6 +1,13 @@
 import { determineLocation } from '../services/locationFunnel.js';
 import { getTomorrowForecast } from '../services/weather.js';
 import * as db from '../database/db.js'; 
+import { sendSignalMessage } from '../api/signal.js';
+import { getAuroraMsg, getHelpMsg, getWeatherMsg } from '../utils/messages.js';
+import { getAurora } from '../services/aurora.js';
+import { runNightlyCheck } from './cronController.js';
+
+
+
 
 async function getImageFromSignal(id){
     
@@ -11,39 +18,24 @@ async function getImageFromSignal(id){
 
 
 function parseSignalMessage(rawJson) {
-    console.log("parse Signal Message")
     try {
         const dataMessage = rawJson.params.envelope?.dataMessage;
         if (!dataMessage) return null; // Keine echte Text/Bild-Nachricht (z.B. Tipp-Indikator)
 
-        // 1. Ist es ein Bild?
-        if (dataMessage.attachments && dataMessage.attachments.length > 0) {
-            console.log("Bild enthalten")
-            // Signal speichert Bilder lokal im Container/Volume, du bekommst meist eine ID/Pfad
-            // const base64Img = getImageFromSignal(dataMessage.attachments[0].id)
-            const fileId = dataMessage.attachments[0].id; 
+        const incomingGroupId = dataMessage.groupInfo?.groupId || null;
 
-            return { type: 'image', data: fileId }; // Pfad anpassen je nach deinem Docker-Volume
+        // 1. Bild
+        if (dataMessage.attachments && dataMessage.attachments.length > 0) {
+            const fileId = dataMessage.attachments[0].id; 
+            return { type: 'image', data: fileId, groupId: incomingGroupId }; // Pfad anpassen je nach deinem Docker-Volume
         }
 
-        // 2. Ist es eine Koordinate?
+        // 2. Bild
         if (dataMessage.message) {
             const text = dataMessage.message.trim()
-            const coordRegex = /^([-+]?\d{1,2}[.,]\d+)\s*[,;\s]\s*([-+]?\d{1,3}[.,]\d+)$/;
-            const match = text.match(coordRegex)
+            if (text.startsWith("!")) return sendSystemMessage(text)
 
-            if (match){
-                console.log("Koordinaten erkannt")
-                const lat = match[1].replace(',', '.');
-                const lon = match[2].replace(',', '.');
-                
-                return {
-                    type: "coordinates",
-                    lat, lon 
-                }
-            }
-            // 3. Fallback Text
-            return { type: 'text', data: text };
+            return { type: 'text', data: text, groupId: incomingGroupId };
         }
 
         return null;
@@ -53,10 +45,34 @@ function parseSignalMessage(rawJson) {
     }
 }
 
+async function sendSystemMessage(systemMessage){
+    const location = await db.getLastLocation()
+    if (systemMessage === "!help"){
+        await sendSignalMessage(getHelpMsg(), process.env.SEND_GROUP_ID)
+    } else if (systemMessage === "!wetter"){
+        const weather = await getTomorrowForecast({lat: location.latitude, lon: location.longitude})
+        await sendSignalMessage(getWeatherMsg(weather), process.env.SEND_GROUP_ID)
+    } else if (systemMessage == "!aurora"){
+        await runNightlyCheck(true)
+    }
+
+    return null
+}
+
 export async function handleIncomingMessage(payload) {
     
     const cleanPayload = parseSignalMessage(payload)
-    if (!cleanPayload) return;
+    
+    // KLeiner logischer Fehler, bei Systemmeldungen wird die Gruppe nicht gecheckt, der payload wird null
+    if (!cleanPayload || !cleanPayload.groupId) return; 
+
+    const allowedGroup = process.env.ALLOWED_GROUP_ID;
+    
+    if (cleanPayload.groupId !== allowedGroup) {
+        console.log(`[SECURITY] Ignoriere Nachricht aus unbefugter Gruppe: ${cleanPayload.groupId}`);
+        return; // Wir brechen hier sofort und lautlos ab!
+    }
+    
     
     // 1. Ort bestimmen
     const result = await determineLocation(cleanPayload)
@@ -77,10 +93,12 @@ export async function handleIncomingMessage(payload) {
     const weather = await getTomorrowForecast({lat: result.latitude, lon: result.longitude})
     
 
-    // 4. Wetter in Tabelle Wetter eintragen
-
+    // Rückgabe formulieren
+    const message = `Willkommen in ${result.place_name}. Das Wetter für morgen: ${weather.minTemp}-${weather.maxTemp} Grad und ${weather.totalRainMm} mm Regen.`
+    await sendSignalMessage(message, process.env.SEND_GROUP_ID)
 
     console.log(result)
     console.log(weather) 
+    return
  }
 
