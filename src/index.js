@@ -2,12 +2,13 @@ import 'dotenv/config'; // Lädt die .env automatisch aus dem Root!
 import { handleIncomingMessage } from './controller/messageController.js';
 import { logError } from './utils/logger.js';
 import { runNightlyCheck } from './controller/cronController.js';
+import { hostname } from 'node:os';
 
 const PORT = process.env.PORT || 3000;
 
 Bun.serve({
     port: PORT,
-
+    hostname: "0.0.0.0",
     async fetch(req){
         const url = new URL(req.url)
 

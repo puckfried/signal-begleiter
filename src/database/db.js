@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const db = new Database(join(__dirname, '../../checkins.db'));
-
+// const db = new Database(join(__dirname, '../../checkins.db'));
+const db = new Database(join(__dirname, '../../data/checkins.db'));
 // WETTER fehlt noch
 
 db.exec(`

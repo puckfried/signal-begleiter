@@ -9,12 +9,12 @@ import { runNightlyCheck } from './cronController.js';
 
 
 
-async function getImageFromSignal(id){
+// async function getImageFromSignal(id){
     
-    const res = await fetch(`http://127.0.0.1:8080/v1/attachments/${id}`)
-    const arrayBuffer = await res.arrayBuffer()
-    return Buffer.from(arrayBuffer).toString("base64")
-}
+//     const res = await fetch(`http://127.0.0.1:8080/v1/attachments/${id}`)
+//     const arrayBuffer = await res.arrayBuffer()
+//     return Buffer.from(arrayBuffer).toString("base64")
+// }
 
 
 function parseSignalMessage(rawJson) {
@@ -51,7 +51,7 @@ async function sendSystemMessage(systemMessage){
         await sendSignalMessage(getHelpMsg(), process.env.SEND_GROUP_ID)
     } else if (systemMessage === "!wetter"){
         const weather = await getTomorrowForecast({lat: location.latitude, lon: location.longitude})
-        await sendSignalMessage(getWeatherMsg(weather), process.env.SEND_GROUP_ID)
+        await sendSignalMessage(getWeatherMsg(weather, location.place_name), process.env.SEND_GROUP_ID)
     } else if (systemMessage == "!aurora"){
         await runNightlyCheck(true)
     }
@@ -94,7 +94,7 @@ export async function handleIncomingMessage(payload) {
     
 
     // Rückgabe formulieren
-    const message = `Willkommen in ${result.place_name}. Das Wetter für morgen: ${weather.minTemp}-${weather.maxTemp} Grad und ${weather.totalRainMm} mm Regen.`
+    const message = `Willkommen in ${result.place_name}. Das Wetter für morgen: \nMinimum: ${weather.minTemp}°\nMaximum: ${weather.maxTemp}°\nRegen: ${weather.totalRainMm}mm.`
     await sendSignalMessage(message, process.env.SEND_GROUP_ID)
 
     console.log(result)

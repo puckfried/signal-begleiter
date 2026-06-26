@@ -9,8 +9,8 @@ async function processImage(fileId) {
     // const base64 = fileBuffer.toString('base64');
     // const ext = extname(imagePath).toLowerCase().slice(1);
     // const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-    
-    const response = await fetch(`http://127.0.0.1:8080/v1/attachments/${fileId}`);
+    const signalApiUrl = process.env.SIGNAL_API_URL;
+    const response = await fetch(`${signalApiUrl}/v1/attachments/${fileId}`);
     
     if (!response.ok) throw new Error(`Konnte Bild nicht laden: ${response.status}`)
     const mimeType = response.headers.get('content-type') || 'image/jpeg';

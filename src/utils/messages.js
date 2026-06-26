@@ -12,8 +12,8 @@ Sendet ein Bild oder Koordinaten, um einen neuen Ort zu registrieren.
 }
 
 
-export function getWeatherMsg(weather){
-    const message = `Das Wetter für morgen: ${weather.minTemp.toFixed(0)}-${weather.maxTemp.toFixed(0)} Grad und ${weather.totalRainMm} mm Regen.`
+export function getWeatherMsg(weather, place){
+    const message = `Das Wetter für morgen in ${place}:\nMinimum: ${weather.minTemp.toFixed(0)}°\nMaximum: ${weather.maxTemp.toFixed(0)}°\nRegen: ${weather.totalRainMm}mm.`
     return message
 }
 
