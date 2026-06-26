@@ -17,7 +17,7 @@ import { runNightlyCheck } from './cronController.js';
 // }
 
 
-function parseSignalMessage(rawJson) {
+async function parseSignalMessage(rawJson) {
     try {
         const dataMessage = rawJson.params.envelope?.dataMessage;
         if (!dataMessage) return null; // Keine echte Text/Bild-Nachricht (z.B. Tipp-Indikator)
