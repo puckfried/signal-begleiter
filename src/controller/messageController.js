@@ -33,7 +33,7 @@ function parseSignalMessage(rawJson) {
         // 2. Bild
         if (dataMessage.message) {
             const text = dataMessage.message.trim()
-            if (text.startsWith("!")) return sendSystemMessage(text)
+            if (text.startsWith("!")) return await sendSystemMessage(text)
 
             return { type: 'text', data: text, groupId: incomingGroupId };
         }
@@ -61,7 +61,7 @@ async function sendSystemMessage(systemMessage){
 
 export async function handleIncomingMessage(payload) {
     
-    const cleanPayload = parseSignalMessage(payload)
+    const cleanPayload = await parseSignalMessage(payload)
     
     // KLeiner logischer Fehler, bei Systemmeldungen wird die Gruppe nicht gecheckt, der payload wird null
     if (!cleanPayload || !cleanPayload.groupId) return; 
