@@ -5,6 +5,7 @@ import { sendSignalMessage } from '../api/signal.js';
 import { getAuroraMsg, getHelpMsg, getWeatherMsg } from '../utils/messages.js';
 import { getAurora } from '../services/aurora.js';
 import { runNightlyCheck } from './cronController.js';
+import { getNextGedicht } from '../services/gedichtService.js';
 
 
 
@@ -46,14 +47,28 @@ async function parseSignalMessage(rawJson) {
 }
 
 async function sendSystemMessage(systemMessage){
-    const location = await db.getLastLocation()
-    if (systemMessage === "!help"){
+    const command = systemMessage.toLowerCase();
+    
+    if (command === "!help"){
         await sendSignalMessage(getHelpMsg(), process.env.SEND_GROUP_ID)
-    } else if (systemMessage === "!wetter"){
+    } else if (command === "!wetter"){
+        const location = await db.getLastLocation();
+        if (!location || !location.latitude) {
+            await sendSignalMessage("Ich brauche erst einen Standort! Schickt mir bitte ein Bild von einem Ortsschild, Koordinaten oder einen Ortsnamen.", process.env.SEND_GROUP_ID);
+            return null;
+        }
         const weather = await getTomorrowForecast({lat: location.latitude, lon: location.longitude})
+        if (!weather) {
+            await sendSignalMessage(`Für ${location.place_name} habe ich gerade leider keine Wetterdaten.`, process.env.SEND_GROUP_ID);
+            return null;
+        }
+
         await sendSignalMessage(getWeatherMsg(weather, location.place_name), process.env.SEND_GROUP_ID)
-    } else if (systemMessage == "!aurora"){
+    } else if (command === "!aurora"){
         await runNightlyCheck(true)
+    } else if (command === "!gedicht"){
+        const gedicht = getNextGedicht()
+        await sendSignalMessage(gedicht, process.env.SEND_GROUP_ID)
     }
 
     return null
@@ -77,7 +92,11 @@ export async function handleIncomingMessage(payload) {
     // 1. Ort bestimmen
     const result = await determineLocation(cleanPayload)
    
-    // Später: signal.sendMessage(result.error);
+
+    if (result.error) {
+        await sendSignalMessage(`Sorry, der Ort wurde nicht gefunden.`, process.env.SEND_GROUP_ID);
+        return; // <-- Dieser Befehl ist Magie! Er beendet die Funktion hier auf der Stelle.
+    }
 
     // 2. Ort in Datenbank übertragen
     db.saveLocation({
@@ -92,9 +111,16 @@ export async function handleIncomingMessage(payload) {
     // 3. Wetter erfragen
     const weather = await getTomorrowForecast({lat: result.latitude, lon: result.longitude})
     
+    let message = `Willkommen in ${result.place_name}.`;
+    
+    if (weather) {
+        message += ` Das Wetter für morgen: \nMinimum: ${weather.minTemp}°\nMaximum: ${weather.maxTemp}°\nRegen: ${weather.totalRainMm}mm.`;
+    } else {
+        message += ` (Für diese Region gibt es leider keine Wetterdaten).`;
+    }
 
     // Rückgabe formulieren
-    const message = `Willkommen in ${result.place_name}. Das Wetter für morgen: \nMinimum: ${weather.minTemp}°\nMaximum: ${weather.maxTemp}°\nRegen: ${weather.totalRainMm}mm.`
+    // const message = `Willkommen in ${result.place_name}. Das Wetter für morgen: \nMinimum: ${weather.minTemp}°\nMaximum: ${weather.maxTemp}°\nRegen: ${weather.totalRainMm}mm.`
     await sendSignalMessage(message, process.env.SEND_GROUP_ID)
 
     console.log(result)

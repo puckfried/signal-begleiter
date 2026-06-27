@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { recognizeSign } from '../api/openai';
 import { fetchCityForCoordinates, fetchCoordinatesForCity } from '../api/geocode';
+import { sendSignalMessage } from '../api/signal';
 
 async function processImage(fileId) {
     // 1. Datei vorbereiten -> Base64
@@ -19,7 +20,7 @@ async function processImage(fileId) {
     
     // 2. Ortsnamen erfragen -> OpenAI
     const placeName = await recognizeSign(base64, mimeType)  
-    if (placeName.startsWith('ERROR:')) throw new Error(`Kein Ortsname erkennbar auf dem Bild: ${imagePath}`);
+    if (placeName.startsWith('ERROR:')) throw new Error(`Kein Ortsname erkennbar auf dem Bild`);
     
     // 3. Ortsnamen weiterverarbeiten -> Koordinaten
     return processTextToLocation(placeName);
@@ -49,7 +50,7 @@ async function processCoordinates(latInput, lonInput) {
     }
 
     // Stadt anhand Koordinaten erfragen
-    const rawData = fetchCityForCoordinates(lat,lon)
+    const rawData = await fetchCityForCoordinates(lat,lon)
 
     const addr = rawData.address || {};
     const place_name = addr.village ?? addr.town ?? addr.city ?? rawData.display_name;
@@ -62,17 +63,22 @@ async function processCoordinates(latInput, lonInput) {
 }
 
 export async function determineLocation(inputPayload) {
-    if (inputPayload.type === 'image') {
-        return await processImage(inputPayload.data);
-    }
-    else if (inputPayload.type === 'coordinates') {
-        return await processCoordinates(inputPayload.lat, inputPayload.lon);
-    }
-    else if (inputPayload.type === 'text') {
-        console.log("Input ist reiner text")
-        inputPayload.type = "text"
-        return await processTextToLocation(inputPayload.data);
+    try {
+        if (inputPayload.type === 'image') {
+            return await processImage(inputPayload.data);
+        }
+        else if (inputPayload.type === 'coordinates') {
+            return await processCoordinates(inputPayload.lat, inputPayload.lon);
+        }
+        else if (inputPayload.type === 'text') {
+            console.log("Input ist reiner text")
+            inputPayload.type = "text"
+            return await processTextToLocation(inputPayload.data);
+        }
+        throw new Error("Unbekanntes Eingabeformat");
+    } catch(error){
+        console.error("Standort-Bestimmung fehlgeschlagen:", error.message);
+        return { success: false, error: "Unbekanntes Eingabeformat" };
     }
 
-    return { success: false, error: "Unbekanntes Eingabeformat" };
 }
